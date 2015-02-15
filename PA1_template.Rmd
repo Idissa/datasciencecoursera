@@ -1,0 +1,139 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+1.Loading & Preprocessing data
+
+```{r, echo=TRUE}
+activity <- read.csv("activity.csv", colClasses = c("numeric", "character", 
+    "numeric"))
+head(activity)
+```
+
+```{r, echo=TRUE}
+names(activity)
+```
+
+```{r, echo=TRUE}
+library(lattice)
+```
+
+```{r, echo=TRUE}
+activity$date <- as.Date(activity$date, "%Y-%m-%d")
+```
+
+2.What is mean total number of steps taken per day?
+
+```{r, echo=TRUE}
+StepsTotal <- aggregate(steps ~ date, data = activity, sum, na.rm = TRUE)
+```
+
+```{r, echo=TRUE}
+hist(StepsTotal$steps, main = "Total steps by day", xlab = "day", col = "blue")
+```
+
+```{r, echo=TRUE}
+mean(StepsTotal$steps)
+```
+
+```{r, echo=TRUE}
+median(StepsTotal$steps)
+```
+
+3.What is the average daily activity pattern?
+
+```{r, echo=TRUE}
+time_series <- tapply(activity$steps, activity$interval, mean, na.rm = TRUE)
+```
+
+```{r, echo=TRUE}
+plot(row.names(time_series), time_series, type = "l", xlab = "5-min interval", 
+    ylab = "Average across all Days", main = "Average number of steps taken", 
+    col = "red")
+```
+
+```{r, echo=TRUE}
+max_interval <- which.max(time_series)
+names(max_interval)
+```
+
+4.Imputing missing values
+
+```{r, echo=TRUE}
+activity_NA <- sum(is.na(activity))
+activity_NA
+```
+
+```{r, echo=TRUE}
+StepsAverage <- aggregate(steps ~ interval, data = activity, FUN = mean)
+fillNA <- numeric()
+for (i in 1:nrow(activity)) {
+    obs <- activity[i, ]
+    if (is.na(obs$steps)) {
+        steps <- subset(StepsAverage, interval == obs$interval)$steps
+    } else {
+        steps <- obs$steps
+    }
+    fillNA <- c(fillNA, steps)
+}
+```
+
+```{r, echo=TRUE}
+new_activity <- activity
+new_activity$steps <- fillNA
+```
+
+```{r, echo=TRUE}
+StepsTotal2 <- aggregate(steps ~ date, data = new_activity, sum, na.rm = TRUE)
+```
+
+```{r, echo=TRUE}
+hist(StepsTotal2$steps, main = "Total steps by day", xlab = "day", col = "green")
+```
+
+```{r, echo=TRUE}
+mean(StepsTotal2$steps)
+```
+
+```{r, echo=TRUE}
+median(StepsTotal2$steps)
+```
+
+5.Are there differences in activity patterns between weekdays and weekends?
+
+```{r, echo=TRUE}
+day <- weekdays(activity$date)
+daylevel <- vector()
+for (i in 1:nrow(activity)) {
+    if (day[i] == "Saturday") {
+        daylevel[i] <- "Weekend"
+    } else if (day[i] == "Sunday") {
+        daylevel[i] <- "Weekend"
+    } else {
+        daylevel[i] <- "Weekday"
+    }
+}
+activity$daylevel <- daylevel
+activity$daylevel <- factor(activity$daylevel)
+
+stepsByDay <- aggregate(steps ~ interval + daylevel, data = activity, mean)
+names(stepsByDay) <- c("interval", "daylevel", "steps")
+```
+
+```{r, echo=TRUE}
+xyplot(steps ~ interval | daylevel, stepsByDay, type = "l", layout = c(1, 2), 
+    xlab = "Interval", ylab = "Number of steps")
+```
+
+
+
+
+
+
+
+
